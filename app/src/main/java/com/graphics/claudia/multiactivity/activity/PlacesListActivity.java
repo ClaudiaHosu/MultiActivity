@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 public class PlacesListActivity extends AppCompatActivity {
 
     private List<DisplayLocation> displayLocations = new ArrayList<>();
+    private ArrayAdapter<String> adapter;
+    private List<String> displayLocationsInString = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +52,7 @@ public class PlacesListActivity extends AppCompatActivity {
                 for (LatLng savedCoordinates : savedLocations) {
                     DisplayLocation displayLocation = convertLocation(savedCoordinates);
                     displayLocations.add(displayLocation);
+                    displayLocationsInString.add(displayLocation.getDisplayName());
                 }
 
             }
@@ -59,18 +62,16 @@ public class PlacesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        buildListView();
+        adapter.notifyDataSetChanged();
     }
 
     private void buildListView() {
 
         ListView listView = findViewById(R.id.placesList);
 
-        List<String> displayLocations = toListedSavedLocations();
+        //List<String> displayLocations = toListedSavedLocations();
 
-        if (CollectionUtils.isEmpty(displayLocations)) return;
-
-        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, displayLocations);
+        adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, displayLocationsInString);
         listView.setAdapter(adapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -111,10 +112,9 @@ public class PlacesListActivity extends AppCompatActivity {
 
     }
 
-    @Nullable
     private List<String> toListedSavedLocations() {
 
-        if (CollectionUtils.isEmpty(displayLocations)) return null;
+        if (CollectionUtils.isEmpty(displayLocations)) return new ArrayList<>();
 
         return displayLocations.stream()
                 .map(displayLocation -> displayLocation.getDisplayName())
