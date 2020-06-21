@@ -16,7 +16,7 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        manifestPlaceholders = [ GOOGLE_API_KEY: apikeyProperties['GOOGLE_API_KEY'] ]
+        manifestPlaceholders = [ GOOGLE_API_KEY: "${apikeyProperties['GOOGLE_API_KEY']}" ]
     }
 
     buildTypes {
