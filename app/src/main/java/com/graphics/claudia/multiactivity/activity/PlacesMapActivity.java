@@ -7,7 +7,9 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -22,7 +24,9 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.graphics.claudia.multiactivity.R;
+import com.graphics.claudia.multiactivity.utils.ObjectSerializer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,8 +40,6 @@ public class PlacesMapActivity extends FragmentActivity implements OnMapReadyCal
 
     private LocationManager locationManager;
     private LocationListener locationListener;
-
-    private ArrayList<LatLng> savedLocations = new ArrayList<>();
 
     private boolean viewLocation = false;
 
@@ -122,9 +124,13 @@ public class PlacesMapActivity extends FragmentActivity implements OnMapReadyCal
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(locationCoord, 10));
     }
 
-    private void locationSaved(LatLng locationCoord) {
+    private void locationSaved(LatLng locationCoord) throws Exception {
         mMap.addMarker(new MarkerOptions().position(locationCoord).title("Location saved!"));
-        savedLocations.add(locationCoord);
+
+        SharedPreferences sharedPreferences = getSharedPreferences("com.graphics.claudia.multiactivity.activity", Context.MODE_PRIVATE);
+        List<LatLng> locations = (ArrayList<LatLng>) ObjectSerializer.deserialize(sharedPreferences.getString(PlacesMapActivity.LOCATIONS_KEY, ObjectSerializer.serialize(new ArrayList<LatLng>())));
+        locations.add(locationCoord);
+        sharedPreferences.edit().putString(PlacesMapActivity.LOCATIONS_KEY, ObjectSerializer.serialize(locations)).apply();
     }
 
     /**
@@ -140,7 +146,11 @@ public class PlacesMapActivity extends FragmentActivity implements OnMapReadyCal
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnMapLongClickListener( latLng -> {
-            locationSaved(latLng);
+            try {
+                locationSaved(latLng);
+            } catch (Exception e) {
+                Log.e("error", e.getMessage(), e);
+            }
         });
 
         setUpLocation();
@@ -148,9 +158,6 @@ public class PlacesMapActivity extends FragmentActivity implements OnMapReadyCal
 
     @Override
     public void onBackPressed() {
-        Intent intent = new Intent();
-        intent.putExtra(LOCATIONS_KEY, savedLocations);
-        setResult(Activity.RESULT_OK, intent);
         finish();
     }
 }

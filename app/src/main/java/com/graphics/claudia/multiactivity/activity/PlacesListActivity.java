@@ -4,7 +4,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
@@ -18,7 +20,9 @@ import com.google.android.gms.common.util.CollectionUtils;
 import com.google.android.gms.maps.model.LatLng;
 import com.graphics.claudia.multiactivity.R;
 import com.graphics.claudia.multiactivity.model.DisplayLocation;
+import com.graphics.claudia.multiactivity.utils.ObjectSerializer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -45,15 +49,7 @@ public class PlacesListActivity extends AppCompatActivity {
         if (requestCode == 1) {
             if (resultCode == RESULT_OK) {
 
-                List<LatLng> savedLocations = data.getParcelableArrayListExtra(PlacesMapActivity.LOCATIONS_KEY);
 
-                if (CollectionUtils.isEmpty(savedLocations)) return;
-
-                for (LatLng savedCoordinates : savedLocations) {
-                    DisplayLocation displayLocation = convertLocation(savedCoordinates);
-                    displayLocations.add(displayLocation);
-                    displayLocationsInString.add(displayLocation.getDisplayName());
-                }
 
             }
         }
@@ -62,14 +58,32 @@ public class PlacesListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        adapter.notifyDataSetChanged();
+
+        SharedPreferences sharedPreferences = getSharedPreferences("com.graphics.claudia.multiactivity.activity", Context.MODE_PRIVATE);
+        List<LatLng> savedLocations = null;
+        try {
+            savedLocations = (ArrayList<LatLng>) ObjectSerializer.deserialize(sharedPreferences.getString(PlacesMapActivity.LOCATIONS_KEY, ObjectSerializer.serialize(new ArrayList<LatLng>())));
+            if (CollectionUtils.isEmpty(savedLocations)) return;
+
+            for (LatLng savedCoordinates : savedLocations) {
+                DisplayLocation displayLocation = convertLocation(savedCoordinates);
+                if (!displayLocations.contains(displayLocation)) {
+                    displayLocations.add(displayLocation);
+                    displayLocationsInString.add(displayLocation.getDisplayName());
+                }
+            }
+
+            adapter.notifyDataSetChanged();
+
+        } catch (Exception e) {
+            Log.e("error", e.getMessage(), e);
+        }
+
     }
 
     private void buildListView() {
 
         ListView listView = findViewById(R.id.placesList);
-
-        //List<String> displayLocations = toListedSavedLocations();
 
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, displayLocationsInString);
         listView.setAdapter(adapter);
@@ -105,7 +119,7 @@ public class PlacesListActivity extends AppCompatActivity {
 
 
         } catch (Exception e) {
-            Log.e("Error", e.getMessage());
+            Log.e("Error", e.getMessage(), e);
         }
 
         return displayLocation;
